@@ -230,7 +230,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   line-height: 2.2em;
   background: linear-gradient(transparent calc(2.2em - 1px), var(--line) calc(2.2em - 1px)) 0 0 / 100% 2.2em;
 }
-.paper-from { margin: 1em 0 0; text-align: right; color: #777; }
+.paper-from { margin: 1em 0 28px; text-align: right; color: #777; }
 .know-btn {
   margin-top: auto;
   padding: 14px;
@@ -254,12 +254,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border: 1.5px solid #555;
   border-radius: 999px;
   background: #fff;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 700;
 }
 .back-btn:active { background: #f2f2f2; }
-.works-label { margin: 0 0 6px; font-size: 1rem; font-weight: 700; }
-.works-role { margin: 0 0 32px; font-size: 0.85rem; }
+.works-label { margin: 0 0 6px; font-size: 1.1rem; font-weight: 700; }
+.works-role { margin: 0 0 32px; font-size: 0.95rem; }
 .work-list { display: flex; flex-direction: column; gap: 22px; }
 .work {
   display: block;
@@ -282,7 +282,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background-color: #fff;
 }
 .work-image.ph { display: flex; background: #d9d9d9; }
-.work-title { display: block; margin-top: 8px; font-size: 0.85rem; }
+.work-title { display: block; margin-top: 8px; font-size: 0.95rem; }
 button.work:active .work-image,
 a.work:active .work-image { transform: scale(0.98); }
 
