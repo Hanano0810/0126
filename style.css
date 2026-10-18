@@ -149,86 +149,55 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .finger { animation: tap 1.2s ease-in-out infinite; }
 
-/* ---------- ② パスワード ---------- */
-.pw-card {
+/* ---------- ② ミニゲーム ---------- */
+.game-card {
   width: 100%;
-  max-width: 320px;
-  padding: 20px 18px 22px;
+  max-width: 340px;
+  padding: 18px 16px 14px;
   background: #fff;
   border: 1.5px solid #555;
   border-radius: 14px;
   text-align: center;
 }
-.pw-hint { margin: 0 0 12px; font-size: 0.9rem; font-weight: 500; }
-.pw-image {
+.game-title { margin: 0; font-weight: 700; white-space: pre-line; line-height: 1.6; }
+.game-hud { margin: 8px 0; font-weight: 700; }
+.rally { display: inline-block; min-width: 1.4em; color: #3f8f5a; font-size: 1.4rem; }
+.rally.bump { animation: pop-in 0.25s ease-out; }
+.game-wrap { position: relative; }
+.court {
+  display: block;
   width: 100%;
-  aspect-ratio: 1;
-  object-fit: contain;
-  border-radius: 8px;
+  aspect-ratio: 300 / 420;
+  border-radius: 10px;
+  touch-action: none; /* なぞってもページがスクロールしないように */
 }
-.pw-image.ph { background: #3c3c3c; color: #ddd; }
-
-.pw-boxes {
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin: 10px 0 6px;
-}
-.pw-q {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin: 18px 0 0;
-  font-weight: 700;
-}
-.q-badge {
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #3c3c3c;
-  color: #f2b84b;
-  font-size: 1.1rem;
-}
-.box {
-  width: 36px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f3f3f3;
-  border-radius: 6px 6px 0 0;
-  border-bottom: 2px solid #999;
-  font-size: 1.3rem;
-  font-weight: 700;
-}
-.break { flex-basis: 100%; height: 0; }
-.pw-boxes:focus-within .box { border-color: var(--main); }
-.box.filled { animation: pop-in 0.2s ease-out; }
-/* 文字入力は見えない入力欄で受け取り、枠に1文字ずつ表示 */
-.pw-input {
+.game-msg {
   position: absolute;
   inset: 0;
-  width: 100%;
-  opacity: 0;
-  font-size: 16px; /* iPhoneで勝手にズームしないように */
-}
-.pw-error { min-height: 1.4em; margin: 4px 0 8px; color: #d0463b; font-size: 0.85rem; }
-.pw-submit {
-  width: 100%;
-  padding: 12px;
-  border: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   border-radius: 10px;
-  background: var(--main);
+  background: rgba(0, 0, 0, 0.45);
   color: #fff;
   font-weight: 700;
 }
-.shake { animation: shake 0.4s; }
+.game-msg[hidden] { display: none; }
+.game-msg p { margin: 0; }
+.game-big { font-size: 1.8rem; }
+.game-start {
+  margin-top: 14px;
+  padding: 12px 40px;
+  border: 0;
+  border-radius: 999px;
+  background: #f2b84b;
+  color: #2b2b2b;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.game-tip { margin: 10px 0 0; color: #888; font-size: 0.8rem; }
 
 /* ---------- ③ ひらくアニメーション ---------- */
 .opening { transition: transform 0.5s ease-in 1.4s, opacity 0.5s ease-in 1.4s; }
@@ -279,6 +248,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
   padding: 40px 22px 48px;
   animation: fade-in 0.4s ease-out;
 }
+.back-btn {
+  margin: 0 0 24px;
+  padding: 8px 16px;
+  border: 1.5px solid #555;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.back-btn:active { background: #f2f2f2; }
 .works-label { margin: 0 0 6px; font-size: 1rem; font-weight: 700; }
 .works-role { margin: 0 0 32px; font-size: 0.85rem; }
 .work-list { display: flex; flex-direction: column; gap: 22px; }
@@ -446,10 +425,6 @@ a.work:active .work-image { transform: scale(0.98); }
   60% { transform: translateY(1px) scale(0.92); }
 }
 @keyframes pop-in { from { transform: scale(1.3); } }
-@keyframes shake {
-  20%, 60% { transform: translateX(-8px); }
-  40%, 80% { transform: translateX(8px); }
-}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition-duration: 0.01s !important; }

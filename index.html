@@ -62,64 +62,164 @@
             <span>手紙をタップしてね</span>
           </p>
         </section>`, "is-cover");
-      app.querySelector(".env-btn").addEventListener("click", renderPassword);
+      app.querySelector(".env-btn").addEventListener("click", renderGame);
     }
 
-    // スペースを消し、カタカナで入れてもひらがなとして扱う
-    function normalize(text) {
-      return text.replace(/\s/g, "").replace(/[ァ-ヶ]/g,
-        (c) => String.fromCharCode(c.charCodeAt(0) - 0x60));
-    }
-
-    /* ② パスワード（謎解き） */
-    function renderPassword() {
-      const len = [...SITE.password.answer].length;
-      // groups の区切りごとに改行を入れる（例: [4, 3] → 4文字＋3文字）
-      const breaks = new Set();
-      (SITE.password.groups || []).reduce((sum, n) => (breaks.add(sum + n), sum + n), 0);
-      const boxes = Array.from({ length: len }, (_, i) =>
-        `<span class="box"></span>${breaks.has(i + 1) && i + 1 < len ? `<span class="break"></span>` : ""}`).join("");
+    /* ② ミニゲーム：ソフトテニスのラリー */
+    function renderGame() {
+      const g = SITE.game;
       show(`
         <section class="screen cover">
-          <form class="pw-card" autocomplete="off">
-            <p class="pw-hint">${esc(SITE.password.hint)}</p>
-            ${photo(SITE.password.image, "pw-image", "謎解き")}
-            <p class="pw-q"><span class="q-badge">？</span> の答えは…</p>
-            <label class="pw-boxes">
-              ${boxes}
-              <input class="pw-input" type="text" maxlength="${len}" aria-label="パスワード">
-            </label>
-            <p class="pw-error" role="alert"></p>
-            <button class="pw-submit" type="submit">ひらく</button>
-          </form>
+          <div class="game-card">
+            <p class="game-title">${esc(g.title)}</p>
+            <p class="game-hud">ラリー <b class="rally">0</b> / ${g.goal}</p>
+            <div class="game-wrap">
+              <canvas class="court" width="600" height="840" aria-label="テニスコート"></canvas>
+              <div class="game-msg">
+                <p>指で左右になぞって<br>ラケットを動かそう</p>
+                <button class="game-start" type="button">スタート</button>
+              </div>
+            </div>
+            <p class="game-tip">ラケットの端で打つと角度がつくよ</p>
+          </div>
         </section>`, "is-cover");
 
-      const form = app.querySelector(".pw-card");
-      const input = app.querySelector(".pw-input");
-      const boxEls = app.querySelectorAll(".box");
-      const error = app.querySelector(".pw-error");
+      const canvas = app.querySelector(".court");
+      const ctx = canvas.getContext("2d");
+      ctx.scale(2, 2); // くっきり表示するため2倍の解像度で描く
+      const W = 300, H = 420, EDGE = 14;
+      const rallyEl = app.querySelector(".rally");
+      const msg = app.querySelector(".game-msg");
+      const player = { x: W / 2, y: H - 46, w: g.racket, h: 10 };
+      const cpu = { x: W / 2, y: 36, w: 64, h: 10 };
+      const ball = { x: W / 2, y: H / 2, vx: 0, vy: 0, r: 7 };
+      let state = "ready"; // ready → play → (miss → play) → clear
+      let rally = 0, speed = 0, last = 0;
 
-      input.addEventListener("input", () => {
-        const chars = [...input.value];
-        boxEls.forEach((b, i) => {
-          b.textContent = chars[i] || "";
-          b.classList.toggle("filled", Boolean(chars[i]));
-        });
-        error.textContent = "";
-      });
+      function showMsg(html) {
+        msg.innerHTML = html;
+        msg.hidden = false;
+      }
 
-      form.addEventListener("submit", (e) => {
-        e.preventDefault();
-        if (normalize(input.value) === normalize(SITE.password.answer)) {
-          renderOpening();
-        } else {
-          error.textContent = "ちがうみたい…もう一度考えてみて！";
-          form.classList.remove("shake");
-          void form.offsetWidth;
-          form.classList.add("shake");
+      function setVelocity(dirY, angle) {
+        ball.vx = Math.sin(angle) * speed;
+        ball.vy = dirY * Math.cos(angle) * speed;
+      }
+
+      function serve() {
+        speed = 280;
+        ball.x = cpu.x;
+        ball.y = cpu.y + cpu.h + ball.r;
+        setVelocity(1, (Math.random() - 0.5) * 0.8);
+        msg.hidden = true;
+        state = "play";
+      }
+
+      function update(dt) {
+        ball.x += ball.vx * dt;
+        ball.y += ball.vy * dt;
+        if (ball.x < EDGE + ball.r) { ball.x = EDGE + ball.r; ball.vx = Math.abs(ball.vx); }
+        if (ball.x > W - EDGE - ball.r) { ball.x = W - EDGE - ball.r; ball.vx = -Math.abs(ball.vx); }
+
+        // 相手はボールを追いかけて、必ず打ち返してくる
+        const target = ball.vy < 0 ? ball.x : W / 2;
+        cpu.x += Math.max(-600 * dt, Math.min(600 * dt, target - cpu.x));
+        if (ball.vy < 0 && ball.y - ball.r <= cpu.y + cpu.h) {
+          ball.y = cpu.y + cpu.h + ball.r;
+          setVelocity(1, (Math.random() - 0.5) * 1.4); // 左右に大きく振ってくる
         }
-      });
-      setTimeout(() => input.focus(), 300);
+
+        // 自分のラケットに当たったか
+        if (ball.vy > 0 && ball.y + ball.r >= player.y && ball.y - ball.r <= player.y + player.h
+            && Math.abs(ball.x - player.x) <= player.w / 2 + ball.r) {
+          ball.y = player.y - ball.r;
+          speed = Math.min(speed * 1.08, 580);
+          const offset = Math.max(-1, Math.min(1, (ball.x - player.x) / (player.w / 2)));
+          setVelocity(-1, offset * 0.9);
+          rally++;
+          rallyEl.textContent = rally;
+          rallyEl.classList.remove("bump");
+          void rallyEl.offsetWidth;
+          rallyEl.classList.add("bump");
+          if (rally >= g.goal) {
+            state = "clear";
+            showMsg(`<p class="game-big">クリア！</p><p>手紙をひらくよ</p>`);
+            setTimeout(renderOpening, 1400);
+          }
+        }
+
+        // 取りこぼしたら0回からやり直し
+        if (ball.y - ball.r > H) {
+          state = "miss";
+          rally = 0;
+          rallyEl.textContent = 0;
+          showMsg(`<p class="game-big">おしい！</p><p>もう一回</p>`);
+          setTimeout(serve, 1100);
+        }
+      }
+
+      function draw() {
+        ctx.fillStyle = "#3f8f5a";
+        ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = "rgba(255,255,255,0.9)";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(EDGE, EDGE, W - EDGE * 2, H - EDGE * 2);
+        ctx.beginPath();
+        ctx.moveTo(EDGE, H * 0.3); ctx.lineTo(W - EDGE, H * 0.3);
+        ctx.moveTo(EDGE, H * 0.7); ctx.lineTo(W - EDGE, H * 0.7);
+        ctx.moveTo(W / 2, H * 0.3); ctx.lineTo(W / 2, H * 0.7);
+        ctx.stroke();
+        // ネット
+        ctx.fillStyle = "rgba(255,255,255,0.95)";
+        ctx.fillRect(6, H / 2 - 2, W - 12, 4);
+        ctx.fillStyle = "rgba(0,0,0,0.15)";
+        ctx.fillRect(6, H / 2 + 2, W - 12, 3);
+
+        drawRacket(cpu, "#e9e9e9");
+        drawRacket(player, "#f2b84b");
+
+        // ボール（影つき）
+        ctx.fillStyle = "rgba(0,0,0,0.2)";
+        ctx.beginPath();
+        ctx.ellipse(ball.x + 3, ball.y + 5, ball.r, ball.r * 0.6, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#fbfbe6";
+        ctx.strokeStyle = "#c9cf86";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      function drawRacket(r, color) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.roundRect(r.x - r.w / 2, r.y, r.w, r.h, r.h / 2);
+        ctx.fill();
+      }
+
+      function frame(t) {
+        if (!canvas.isConnected) return; // 画面が切りかわったら止める
+        const dt = Math.min((t - last) / 1000, 0.033);
+        last = t;
+        if (state === "play") update(dt);
+        draw();
+        requestAnimationFrame(frame);
+      }
+
+      function moveRacket(e) {
+        const rect = canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (W / rect.width);
+        const half = player.w / 2;
+        player.x = Math.max(EDGE + half - 10, Math.min(W - EDGE - half + 10, x));
+      }
+      canvas.addEventListener("pointerdown", moveRacket);
+      canvas.addEventListener("pointermove", moveRacket);
+
+      app.querySelector(".game-start").addEventListener("click", serve);
+      last = performance.now();
+      requestAnimationFrame(frame);
     }
 
     /* ③ 手紙がひらくアニメーション */
@@ -162,11 +262,13 @@
 
       show(`
         <section class="works">
+          <button class="back-btn" type="button">← 手紙にもどる</button>
           <h2 class="works-label">担当</h2>
           <p class="works-role">${esc(w.role)}</p>
           <h2 class="works-label">制作物</h2>
           <div class="work-list">${cards}</div>
         </section>`, "is-cover");
+      app.querySelector(".back-btn").addEventListener("click", renderLetter);
       app.querySelector("[data-profile]")?.addEventListener("click", renderProfile);
     }
 
